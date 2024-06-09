@@ -18,6 +18,7 @@ if CLIENT then
 		local uid = net.ReadUInt(16)
 		ply = Player(uid)
 		if !IsValid(ply) then return end
+		local dir = ply:EyeAngles():Right()
 		if !decalt[uid] then
 			local temp = ply:GetPlayerInfo().customfiles[1]
 			local cfile = "user_custom/" .. string.Left(temp, 2) .. "/" .. temp .. ".dat"
@@ -25,25 +26,13 @@ if CLIENT then
 				temp = string.Replace(GetConVar("cl_logofile"):GetString(), "materials/", "")
 				cfile = string.Replace(temp, ".vtf", "")
 				temp = cfile
-			elseif !file.Exists("turbospray/"..temp..".vtf", "DATA") then
-				local tex = file.Read(cfile, "DOWNLOAD")
-				-- if !IsValid(tex) then return end
-				file.Write("turbospray/"..temp..".vtf", tex)
-				-- print(temp, file.Exists("turbospray/"..temp..".vtf", "DATA"))
-				cfile = "../data/turbospray/"..temp
-				-- file.AsyncRead(cfile, "DOWNLOAD", function(name,path,status,data)
-				-- 	print(name,path,status,data)
-				-- 	if status == FSASYNC_OK then
-				-- 		file.Write("turbospray/"..temp..".vtf", data)
-				-- 		print(temp, file.Exists("turbospray/"..temp..".vtf", "DATA"))
-				-- 		cfile = "../data/turbospray/"..temp
-				-- 		return
-				-- 	else print(status) end
-				-- end)
 			else
+				if !file.Exists("turbospray/"..temp..".vtf", "DATA") then
+				local tex = file.Read(cfile, "DOWNLOAD")
+				file.Write("turbospray/"..temp..".vtf", tex)
+				end
 				cfile = "../../data/turbospray/"..temp
 			end
-			print(cfile, "hi")
 			local spraymdl = CreateMaterial("ts/"..temp.."mdl", "VertexLitGeneric", {
 				["$basetexture"] = cfile,
 				["$decal"] = 1,
@@ -66,14 +55,14 @@ if CLIENT then
 				-- ["$vertexcolor"] = 1,
 				-- ["$decalsecondpass"] = 1
 			})
-			spraymdl:SetFloat("$decalscale", 32 / spraymdl:Width())
-			spray:SetFloat("$decalscale", 32 / spraymdl:Width())
+			spraymdl:SetFloat("$decalscale", 64 / spraymdl:Width())
+			spray:SetFloat("$decalscale", 64 / spraymdl:Width())
 			decalt[uid] = spray
-			print(spraymdl:GetString("$decalscale"), spray:GetTexture("$basetexture"):Height())
 		end
 		local qt = util.QuickTrace(ply:EyePos(), ply:GetAimVector() * 256, ply)
 		if !qt.Hit then return end
-		util.DecalEx(decalt[uid], qt.Entity, qt.HitPos, qt.HitNormal, color_white, 2, 2)
+		if qt.HitTexture ==  "**studio**" then dir = -qt.Normal end
+		util.DecalEx(decalt[uid], qt.Entity, qt.HitPos, dir, color_white, 1, 1)
 	end
 	net.Receive("turbosprays", CreateTurboSpray)
 end

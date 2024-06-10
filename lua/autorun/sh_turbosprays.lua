@@ -56,12 +56,12 @@ if CLIENT then
 				-- ["$decalsecondpass"] = 1
 			})
 			spraymdl:SetFloat("$decalscale", 64 / spraymdl:Width())
-			spray:SetFloat("$decalscale", 64 / spraymdl:Width())
+			spray:SetFloat("$decalscale", 64 / spray:Width())
 			decalt[uid] = spray
 		end
 		local qt = util.QuickTrace(ply:EyePos(), ply:GetAimVector() * 256, ply)
 		if !qt.Hit then return end
-		if qt.HitTexture ==  "**studio**" then dir = -qt.Normal end
+		if qt.HitTexture ==  "**studio**" then dir = qt.HitNormal-qt.Normal end
 		util.DecalEx(decalt[uid], qt.Entity, qt.HitPos, dir, color_white, 1, 1)
 	end
 	net.Receive("turbosprays", CreateTurboSpray)

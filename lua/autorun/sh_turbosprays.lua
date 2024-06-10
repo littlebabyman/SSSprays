@@ -37,23 +37,14 @@ if CLIENT then
 				["$basetexture"] = cfile,
 				["$decal"] = 1,
 				["$decalscale"] = 1,
-				-- ["$translucent"] = 1,
 				["$vertexalpha"] = 1,
-				-- ["$vertexcolor"] = 1,
-				-- ["$decalsecondpass"] = 1
 			})
 			local spray = CreateMaterial("ts/"..temp, "LightmappedGeneric", {
 				["$basetexture"] = cfile,
-				-- ["$detail"] = cfile,
-				-- ["$detailscale"] = 2,
-				-- ["$detailblendmode"] = 4,
 				["$decal"] = 1,
 				["$decalscale"] = 1,
 				["$modelmaterial"] = "!ts/"..temp.."mdl",
-				-- ["$translucent"] = 1,
 				["$vertexalpha"] = 1,
-				-- ["$vertexcolor"] = 1,
-				-- ["$decalsecondpass"] = 1
 			})
 			spraymdl:SetFloat("$decalscale", 64 / spraymdl:Width())
 			spray:SetFloat("$decalscale", 64 / spray:Width())

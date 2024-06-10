@@ -62,7 +62,7 @@ if CLIENT then
 		local qt = util.QuickTrace(ply:EyePos(), ply:GetAimVector() * 256, ply)
 		if !qt.Hit then return end
 		if qt.HitTexture ==  "**studio**" then dir = qt.HitNormal-qt.Normal end
-		util.DecalEx(decalt[uid], qt.Entity, qt.HitPos-qt.HitNormal, dir, color_white, 1, 1)
+		util.DecalEx(decalt[uid], qt.Entity, qt.HitPos+qt.HitNormal, dir, color_white, 1, 1)
 	end
 	net.Receive("turbosprays", CreateTurboSpray)
 end

@@ -1,12 +1,13 @@
 AddCSLuaFile()
 
 if SERVER then
+	local delay = GetConVar("decalfrequency")
 	util.AddNetworkString("sssprays")
 	hook.Add("PlayerSpray", "SSSprays", function(ply)
-		if !game.SinglePlayer() and ply:GetPlayerInfo().customfiles[1] == "00000000" then return end
 		if !ply:KeyDown(IN_USE) then return true end
 	end)
 	hook.Add("FinishMove", "SSSprays", function(ply, mv)
+		if ply:GetInternalVariable("m_flNextDecalTime") > 0 then return end
 		if mv:GetImpulseCommand() != 201 or mv:KeyDown(IN_USE) then return end
 		local trab = {}
 		trab.start = ply:EyePos()
@@ -15,6 +16,8 @@ if SERVER then
 		local tr = util.TraceLine(trab)
 		if !tr.Hit then return end
 		sound.Play("SprayCan.Paint", ply:EyePos() + ply:EyeAngles():Forward() * 16)
+		if ply:KeyDown(IN_USE) then ply:SprayDecal(tr.HitPos+tr.HitNormal, tr.HitPos-tr.HitNormal) return end
+		ply:SetSaveValue("m_flNextDecalTime", delay:GetFloat())
 		net.Start("sssprays")
 		net.WriteUInt(ply:UserID(),16)
 		net.WriteVector(ply:EyePos())

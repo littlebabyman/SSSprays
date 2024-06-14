@@ -4,6 +4,7 @@ if SERVER then
 	util.AddNetworkString("sssprays")
 	hook.Add("PlayerSpray", "SSSprays", function(ply)
 		if !game.SinglePlayer() and ply:GetPlayerInfo().customfiles[1] == "00000000" then return end
+		sound.Play("SprayCan.Paint", ply:EyePos() + ply:EyeAngles():Forward() * 16)
 		net.Start("sssprays")
 		net.WriteUInt(ply:UserID(),16)
 		net.Broadcast()

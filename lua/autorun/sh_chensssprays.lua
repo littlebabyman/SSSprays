@@ -4,11 +4,11 @@ local delay = GetConVar("decalfrequency")
 if SERVER then
 	util.AddNetworkString("sssprays")
 	hook.Add("PlayerSpray", "SSSprays", function(ply)
-		if !ply:KeyDown(IN_WALK) then return true end
+		return true
 	end)
 	hook.Add("FinishMove", "SSSprays", function(ply, mv)
 		if ply:GetInternalVariable("m_flNextDecalTime") > 0 then return end
-		if mv:GetImpulseCommand() != 201 or mv:KeyDown(IN_WALK) then return end
+		if mv:GetImpulseCommand() != 201 then return end
 		local trab = {}
 		local pos, ang = ply:EyePos(), ply:EyeAngles()
 		trab.start = pos
@@ -16,8 +16,8 @@ if SERVER then
 		trab.filter = ply
 		local tr = util.TraceLine(trab)
 		if !tr.Hit then return end
-		if ply:KeyDown(IN_WALK) then ply:SprayDecal(pos, trab.endpos) return end
 		sound.Play("SprayCan.Paint", trab.start + ang:Forward() * 16)
+		if ply:KeyDown(IN_WALK) then ply:SprayDecal(pos, trab.endpos) return end
 		ply:SetSaveValue("m_flNextDecalTime", delay:GetFloat())
 		net.Start("sssprays")
 		net.WriteUInt(ply:UserID(),16)

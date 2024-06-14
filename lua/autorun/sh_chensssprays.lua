@@ -1,27 +1,28 @@
 AddCSLuaFile()
-
+local sdist = CreateConVar("ssspray_range", 128, FCVAR_ARCHIVE+FCVAR_REPLICATED, "Spray distance.", 0, 1024)
+local delay = GetConVar("decalfrequency")
 if SERVER then
-	local delay = GetConVar("decalfrequency")
 	util.AddNetworkString("sssprays")
 	hook.Add("PlayerSpray", "SSSprays", function(ply)
-		if !ply:KeyDown(IN_USE) then return true end
+		if !ply:KeyDown(IN_WALK) then return true end
 	end)
 	hook.Add("FinishMove", "SSSprays", function(ply, mv)
 		if ply:GetInternalVariable("m_flNextDecalTime") > 0 then return end
-		if mv:GetImpulseCommand() != 201 or mv:KeyDown(IN_USE) then return end
+		if mv:GetImpulseCommand() != 201 or mv:KeyDown(IN_WALK) then return end
 		local trab = {}
-		trab.start = ply:EyePos()
-		trab.endpos = trab.start + ply:EyeAngles():Forward() * 128
+		local pos, ang = ply:EyePos(), ply:EyeAngles()
+		trab.start = pos
+		trab.endpos = trab.start + ang:Forward() * 128
 		trab.filter = ply
 		local tr = util.TraceLine(trab)
 		if !tr.Hit then return end
-		if ply:KeyDown(IN_USE) then ply:SprayDecal(tr.HitPos+tr.HitNormal, tr.HitPos-tr.HitNormal) return end
-		sound.Play("SprayCan.Paint", ply:EyePos() + ply:EyeAngles():Forward() * 16)
+		if ply:KeyDown(IN_WALK) then ply:SprayDecal(pos, trab.endpos) return end
+		sound.Play("SprayCan.Paint", trab.start + ang:Forward() * 16)
 		ply:SetSaveValue("m_flNextDecalTime", delay:GetFloat())
 		net.Start("sssprays")
 		net.WriteUInt(ply:UserID(),16)
-		net.WriteVector(ply:EyePos())
-		net.WriteAngle(ply:EyeAngles())
+		net.WriteVector(pos)
+		net.WriteAngle(ang)
 		net.Broadcast()
 	end)
 end

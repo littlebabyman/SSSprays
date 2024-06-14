@@ -15,8 +15,8 @@ if SERVER then
 		trab.filter = ply
 		local tr = util.TraceLine(trab)
 		if !tr.Hit then return end
-		sound.Play("SprayCan.Paint", ply:EyePos() + ply:EyeAngles():Forward() * 16)
 		if ply:KeyDown(IN_USE) then ply:SprayDecal(tr.HitPos+tr.HitNormal, tr.HitPos-tr.HitNormal) return end
+		sound.Play("SprayCan.Paint", ply:EyePos() + ply:EyeAngles():Forward() * 16)
 		ply:SetSaveValue("m_flNextDecalTime", delay:GetFloat())
 		net.Start("sssprays")
 		net.WriteUInt(ply:UserID(),16)

@@ -4,7 +4,7 @@ local delay = GetConVar("decalfrequency")
 if SERVER then
 	util.AddNetworkString("sssprays")
 	hook.Add("PlayerSpray", "SSSprays", function(ply)
-		return true
+		if game.SinglePlayer() or !ply:KeyDown(IN_WALK) then return true end
 	end)
 	hook.Add("FinishMove", "SSSprays", function(ply, mv)
 		if ply:GetInternalVariable("m_flNextDecalTime") > 0 then return end
@@ -12,17 +12,19 @@ if SERVER then
 		local trab = {}
 		local pos, ang = ply:EyePos(), ply:EyeAngles()
 		trab.start = pos
-		trab.endpos = trab.start + ang:Forward() * 128
+		trab.endpos = trab.start + ang:Forward() * sdist:GetInt()
 		trab.filter = ply
 		local tr = util.TraceLine(trab)
 		if !tr.Hit then return end
-		sound.Play("SprayCan.Paint", trab.start + ang:Forward() * 16)
 		if ply:KeyDown(IN_WALK) then ply:SprayDecal(pos, trab.endpos) return end
+		sound.Play("SprayCan.Paint", trab.start + ang:Forward() * 16)
 		ply:SetSaveValue("m_flNextDecalTime", delay:GetFloat())
-		net.Start("sssprays")
-		net.WriteUInt(ply:UserID(),16)
-		net.WriteVector(pos)
-		net.WriteAngle(ang)
+		ply:AddEFlags(EFL_FORCE_CHECK_TRANSMIT)
+		tr.Entity:AddEFlags(EFL_FORCE_CHECK_TRANSMIT)
+		net.Start("sssprays", true)
+		net.WriteEntity(ply)
+		net.WriteNormal(ply:GetAimVector())
+		net.WriteEntity(tr.Entity)
 		net.Broadcast()
 	end)
 end
@@ -31,11 +33,21 @@ if CLIENT then
 	local decalt = {}
 	file.CreateDir("sssprays")
 	local function CreateSSSpray(len, ply)
-		local uid = net.ReadUInt(16)
-		ply = Player(uid)
+		print(len)
+		
+		-- local uid = net.ReadUInt(8)
+		-- ply = Player(uid)
+		ply = net.ReadEntity()
+		local norm = net.ReadNormal()
+		local ent = net.ReadEntity()
+		-- local norm = net.ReadNormal()
 		if !IsValid(ply) then return end
-		local pos, ang = net.ReadVector(), net.ReadAngle()
+		print(ply, ent:GetPos())
+		local uid = ply:UserID()
+		local pos = ply:EyePos()
+		local ang = norm:Angle()
 		local dir = ang:Right()
+		print(dir)
 		if !decalt[uid] then
 			local temp = ply:GetPlayerInfo().customfiles[1]
 			local cfile = "user_custom/" .. string.Left(temp, 2) .. "/" .. temp .. ".dat"
@@ -69,7 +81,7 @@ if CLIENT then
 			spray:SetFloat("$decalscale", 64 / spray:Width())
 			decalt[uid] = spray
 		end
-		local qt = util.QuickTrace(pos, ang:Forward() * 128, ply)
+		local qt = util.QuickTrace(pos, ang:Forward() * sdist:GetInt(), ply)
 		if !qt.Hit then return end
 		if qt.HitTexture ==  "**studio**" then dir = qt.HitNormal-qt.Normal end
 		util.DecalEx(decalt[uid], qt.Entity, qt.HitPos+qt.HitNormal, dir, color_white, 1, 1)

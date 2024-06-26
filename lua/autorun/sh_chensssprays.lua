@@ -33,21 +33,14 @@ if CLIENT then
 	local decalt = {}
 	file.CreateDir("sssprays")
 	local function CreateSSSpray(len, ply)
-		print(len)
-		
-		-- local uid = net.ReadUInt(8)
-		-- ply = Player(uid)
 		ply = net.ReadEntity()
 		local norm = net.ReadNormal()
 		local ent = net.ReadEntity()
-		-- local norm = net.ReadNormal()
 		if !IsValid(ply) then return end
-		print(ply, ent:GetPos())
 		local uid = ply:UserID()
 		local pos = ply:EyePos()
 		local ang = norm:Angle()
 		local dir = ang:Right()
-		print(dir)
 		if !decalt[uid] then
 			local temp = ply:GetPlayerInfo().customfiles[1]
 			local cfile = "user_custom/" .. string.Left(temp, 2) .. "/" .. temp .. ".dat"
@@ -77,14 +70,21 @@ if CLIENT then
 				["$vertexalpha"] = 1,
 				["$decalsecondpass"] = 1,
 			})
-			spraymdl:SetFloat("$decalscale", 64 / spraymdl:Width())
-			spray:SetFloat("$decalscale", 64 / spray:Width())
+			spraymdl:SetFloat("$decalscale", 32 / spraymdl:Width())
+			spray:SetFloat("$decalscale", 32 / spray:Width())
 			decalt[uid] = spray
 		end
 		local qt = util.QuickTrace(pos, ang:Forward() * sdist:GetInt(), ply)
 		if !qt.Hit then return end
-		if qt.HitTexture ==  "**studio**" then dir = qt.HitNormal-qt.Normal end
-		util.DecalEx(decalt[uid], qt.Entity, qt.HitPos+qt.HitNormal, dir, color_white, 1, 1)
+		if qt.HitTexture ==  "**studio**" then dir = (qt.HitNormal-qt.Normal):GetNormalized() end
+		util.DecalEx(decalt[uid], qt.Entity, qt.HitPos, dir, color_white, 2, 2)
 	end
 	net.Receive("sssprays", CreateSSSpray)
+	hook.Add("PopulateToolMenu", "SSSprays", function()
+		spawnmenu.AddToolMenuOption("Options", "Chen's Addons", "SSSprays", "SSSprays", "", "", function(pnl)
+			pnl:SetName("Super Spammable Sprays")
+			pnl:NumSlider("Max spray distance", "ssspray_range", 32, 1024)
+			pnl:NumberWang("Spray delay", "decalfrequency", 0, 600)
+		end)
+	end)
 end

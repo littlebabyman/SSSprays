@@ -49,8 +49,9 @@ if CLIENT then
 				cfile = string.Replace(temp, ".vtf", "")
 				temp = cfile
 			else
-				if !file.Exists("sssprays/"..temp..".vtf", "DATA") then
 				local tex = file.Read(cfile, "DOWNLOAD")
+				if !tex or tex:len() <= 0 then return end
+				if !file.Exists("sssprays/"..temp..".vtf", "DATA") then
 				file.Write("sssprays/"..temp..".vtf", tex)
 				end
 				cfile = "../../data/sssprays/"..temp

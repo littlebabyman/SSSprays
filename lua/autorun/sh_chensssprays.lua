@@ -121,6 +121,8 @@ if CLIENT then
 	hook.Add("PopulateToolMenu", "SSSprays", function()
 		spawnmenu.AddToolMenuOption("Options", "Chen's Addons", "SSSprays", "SSSprays", "", "", function(pnl)
 			local cl, sv = vgui.Create("DForm"), vgui.Create("DForm")
+			cl:SetName("Client")
+			sv:SetName("Server")
 			pnl:AddItem(cl)
 			pnl:AddItem(sv)
 			pnl:SetName("Super Spammable Sprays")

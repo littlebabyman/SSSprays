@@ -74,7 +74,7 @@ if CLIENT then
 				-- ["$vertexcolor"] = 1,
 				["$translucent"] = 1,
 				-- ["$vertexalpha"] = 1,
-				["$color2"] = "["..tostring(ucol).."]",
+				["$color"] = "["..tostring(ucol).."]",
 				-- ["$blendtintcoloroverbase"] = 1,
 				-- ["$decalsecondpass"] = 1,
 				["Proxies"] = {
@@ -134,12 +134,14 @@ if CLIENT then
 			colsel:AddChoice("Player Color", 2)
 			local colorbox = vgui.Create("DColorCombo")
 			cl:AddItem(colorbox)
+			colorbox:SetColor(scolorr:GetInt(),scolorg:GetInt(),scolorb:GetInt())
 			function colorbox:OnValueChanged(col)
 				scolorcustom:SetString(col["r"].." "..col["g"].." "..col["b"])
 				scolorr:SetInt(col["r"])
 				scolorg:SetInt(col["g"])
 				scolorb:SetInt(col["b"])
 			end
+			cl:Help("The color for prop sprays will be locked in until a map change.\nTechnical limitation that I haven't figured a workaround for, yet.")
 			sv:NumSlider("Max spray distance", "ssspray_range", 32, 1024)
 			sv:NumberWang("Spray delay", "decalfrequency", 0, 600)
 		end)

@@ -31,7 +31,10 @@ end
 
 if CLIENT then
 	local scolor = CreateConVar("ssspray_color", 0, FCVAR_ARCHIVE+FCVAR_USERINFO, "Use your player colors for sprays.", -1, 2)
-	local scolorcustom = CreateConVar("ssspray_color_custom", "255 255 255", FCVAR_ARCHIVE+FCVAR_USERINFO, "Custom defined colors.")
+	local scolorcustom = CreateConVar("ssspray_color_custom", "255 255 255", FCVAR_ARCHIVE+FCVAR_USERINFO, "Custom spray color values. Moreso for reference if anything.")
+	local scolorr = CreateConVar("ssspray_color_r", 255, FCVAR_ARCHIVE+FCVAR_USERINFO, "Custom spray color red value.")
+	local scolorg = CreateConVar("ssspray_color_g", 255, FCVAR_ARCHIVE+FCVAR_USERINFO, "Custom spray color green value.")
+	local scolorb = CreateConVar("ssspray_color_b", 255, FCVAR_ARCHIVE+FCVAR_USERINFO, "Custom spray color blue value.")
 	local decalt = {}
 	file.CreateDir("sssprays")
 	local function CreateSSSpray()
@@ -44,7 +47,7 @@ if CLIENT then
 		local ang = norm:Angle()
 		local dir = ang:Right()
 		local uinfo = ply:GetInfoNum("ssspray_color", 0)
-		local ucol = uinfo > 0 and (uinfo == 2 and ply:GetPlayerColor() or uinfo == 1 and ply:GetWeaponColor()) or Vector(1,1,1)
+		local ucol = uinfo != 0 and (uinfo == 2 and ply:GetPlayerColor() or uinfo == 1 and ply:GetWeaponColor() or Vector(ply:GetInfoNum("ssspray_color_r", 255) / 255,ply:GetInfoNum("ssspray_color_g", 255) / 255,ply:GetInfoNum("ssspray_color_b", 255) / 255)) or Vector(1,1,1)
 		if !decalt[uid] then
 			local temp = ply:GetPlayerInfo().customfiles[1]
 			local cfile = "user_custom/" .. string.Left(temp, 2) .. "/" .. temp .. ".dat"
@@ -108,7 +111,7 @@ if CLIENT then
 		end
 		local qt = util.QuickTrace(pos, ang:Forward() * sdist:GetInt(), ply)
 		if !qt.Hit then return end
-		local color = qt.HitTexture !=  "**studio**" and uinfo > 0 and ucol:ToColor() or color_white
+		local color = qt.HitTexture !=  "**studio**" and uinfo != 0 and ucol:ToColor() or color_white
 		if qt.HitTexture ==  "**studio**" then
 			dir = (qt.HitNormal-qt.Normal*0.1):GetNormalized()
 		end
@@ -117,9 +120,26 @@ if CLIENT then
 	net.Receive("sssprays", CreateSSSpray)
 	hook.Add("PopulateToolMenu", "SSSprays", function()
 		spawnmenu.AddToolMenuOption("Options", "Chen's Addons", "SSSprays", "SSSprays", "", "", function(pnl)
+			local cl, sv = vgui.Create("DForm"), vgui.Create("DForm")
+			pnl:AddItem(cl)
+			pnl:AddItem(sv)
 			pnl:SetName("Super Spammable Sprays")
-			pnl:NumSlider("Max spray distance", "ssspray_range", 32, 1024)
-			pnl:NumberWang("Spray delay", "decalfrequency", 0, 600)
+			local colsel = cl:ComboBox("Spray Color", "ssspray_color")
+			colsel:SetSortItems(false)
+			colsel:AddChoice("Custom", -1)
+			colsel:AddChoice("Unmodified", 0)
+			colsel:AddChoice("Weapon Color", 1)
+			colsel:AddChoice("Player Color", 2)
+			local colorbox = vgui.Create("DColorCombo")
+			cl:AddItem(colorbox)
+			function colorbox:OnValueChanged(col)
+				scolorcustom:SetString(col["r"].." "..col["g"].." "..col["b"])
+				scolorr:SetInt(col["r"])
+				scolorg:SetInt(col["g"])
+				scolorb:SetInt(col["b"])
+			end
+			sv:NumSlider("Max spray distance", "ssspray_range", 32, 1024)
+			sv:NumberWang("Spray delay", "decalfrequency", 0, 600)
 		end)
 	end)
 end

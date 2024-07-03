@@ -30,9 +30,11 @@ if SERVER then
 end
 
 if CLIENT then
+	local scolor = CreateConVar("ssspray_color", 0, FCVAR_ARCHIVE+FCVAR_USERINFO, "Use your player colors for sprays.", -1, 2)
+	local scolorcustom = CreateConVar("ssspray_color_custom", "255 255 255", FCVAR_ARCHIVE+FCVAR_USERINFO, "Custom defined colors.")
 	local decalt = {}
 	file.CreateDir("sssprays")
-	local function CreateSSSpray(len, ply)
+	local function CreateSSSpray()
 		ply = net.ReadEntity()
 		local norm = net.ReadNormal()
 		local ent = net.ReadEntity()
@@ -41,6 +43,8 @@ if CLIENT then
 		local pos = ply:EyePos()
 		local ang = norm:Angle()
 		local dir = ang:Right()
+		local uinfo = ply:GetInfoNum("ssspray_color", 0)
+		local ucol = uinfo > 0 and (uinfo == 2 and ply:GetPlayerColor() or uinfo == 1 and ply:GetWeaponColor()) or Vector(1,1,1)
 		if !decalt[uid] then
 			local temp = ply:GetPlayerInfo().customfiles[1]
 			local cfile = "user_custom/" .. string.Left(temp, 2) .. "/" .. temp .. ".dat"
@@ -51,34 +55,64 @@ if CLIENT then
 			else
 				local tex = file.Read(cfile, "DOWNLOAD")
 				if !tex or tex:len() <= 0 then return end
-				if !file.Exists("sssprays/"..temp..".vtf", "DATA") then
+				if !file.Exists("sssprays/"..temp..".vtf", "DATA") or file.Read("sssprays/"..temp..".vtf", "DATA"):len() <= 0 then
 				file.Write("sssprays/"..temp..".vtf", tex)
 				end
 				cfile = "../../data/sssprays/"..temp
 			end
 			local spraymdl = CreateMaterial("ssspray/"..temp.."mdl", "VertexLitGeneric", {
 				["$basetexture"] = cfile,
+				["$model"] = 1,
 				["$decal"] = 1,
 				["$decalscale"] = 1,
-				["$vertexalpha"] = 1,
-				["$decalsecondpass"] = 1,
+				-- ["$alphatest"] = 1,
+				-- ["$alphatestreference"] = 1,
+				-- ["$allowalphatocoverage"] = 1,
+				-- ["$vertexcolor"] = 1,
+				["$translucent"] = 1,
+				-- ["$vertexalpha"] = 1,
+				["$color2"] = "["..tostring(ucol).."]",
+				-- ["$blendtintcoloroverbase"] = 1,
+				-- ["$decalsecondpass"] = 1,
+				["Proxies"] = {
+					["AnimatedOffsetTexture"] = {
+						["animatedtexturevar"] = "$basetexture",
+						["animatedtextureframenumvar"] = "$frame",
+						["animatedtextureframerate"] = 5,
+					}
+				}
 			})
 			local spray = CreateMaterial("ssspray/"..temp, "LightmappedGeneric", {
 				["$basetexture"] = cfile,
 				["$decal"] = 1,
 				["$decalscale"] = 1,
 				["$modelmaterial"] = "!ssspray/"..temp.."mdl",
+				-- ["$alphatest"] = 1,
+				-- ["$alphatestreference"] = 1,
+				-- ["$allowalphatocoverage"] = 1,
+				["$color"] = "[1 1 1]",
 				["$vertexalpha"] = 1,
-				["$decalsecondpass"] = 1,
+				["$vertexcolor"] = 1,
+				-- ["$decalsecondpass"] = 1,
+				["Proxies"] = {
+					["AnimatedOffsetTexture"] = {
+						["animatedtexturevar"] = "$basetexture",
+						["animatedtextureframenumvar"] = "$frame",
+						["animatedtextureframerate"] = 5,
+					}
+				}
 			})
 			spraymdl:SetFloat("$decalscale", 32 / spraymdl:Width())
 			spray:SetFloat("$decalscale", 32 / spray:Width())
-			decalt[uid] = spray
+			decalt[uid] = {spray, spraymdl}
 		end
 		local qt = util.QuickTrace(pos, ang:Forward() * sdist:GetInt(), ply)
 		if !qt.Hit then return end
-		if qt.HitTexture ==  "**studio**" then dir = (qt.HitNormal-qt.Normal):GetNormalized() end
-		util.DecalEx(decalt[uid], qt.Entity, qt.HitPos, dir, color_white, 2, 2)
+		local color = qt.HitTexture !=  "**studio**" and uinfo > 0 and ucol:ToColor() or color_white
+		if qt.HitTexture ==  "**studio**" then
+			dir = (qt.HitNormal-qt.Normal*0.1):GetNormalized()
+		end
+		util.DecalEx(decalt[uid][1], qt.Entity, qt.HitPos, dir, color, 2, 2)
 	end
 	net.Receive("sssprays", CreateSSSpray)
 	hook.Add("PopulateToolMenu", "SSSprays", function()

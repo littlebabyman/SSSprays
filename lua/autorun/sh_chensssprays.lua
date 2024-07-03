@@ -126,7 +126,7 @@ if CLIENT then
 			pnl:AddItem(cl)
 			pnl:AddItem(sv)
 			pnl:SetName("Super Spammable Sprays")
-			local colsel = cl:ComboBox("Spray Color", "ssspray_color")
+			local colsel = cl:ComboBox("Spray Tint", "ssspray_color")
 			colsel:SetSortItems(false)
 			colsel:AddChoice("Custom", -1)
 			colsel:AddChoice("Unmodified", 0)

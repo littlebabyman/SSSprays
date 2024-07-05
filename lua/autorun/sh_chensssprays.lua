@@ -74,7 +74,7 @@ if CLIENT then
 				-- ["$vertexcolor"] = 1,
 				["$translucent"] = 1,
 				-- ["$vertexalpha"] = 1,
-				["$color"] = "["..tostring(ucol).."]",
+				["$color2"] = "["..tostring(ucol).."]",
 				-- ["$blendtintcoloroverbase"] = 1,
 				-- ["$decalsecondpass"] = 1,
 				["Proxies"] = {
@@ -93,7 +93,7 @@ if CLIENT then
 				-- ["$alphatest"] = 1,
 				-- ["$alphatestreference"] = 1,
 				-- ["$allowalphatocoverage"] = 1,
-				["$color"] = "[1 1 1]",
+				["$color"] = "["..tostring(ucol).."]",
 				["$vertexalpha"] = 1,
 				["$vertexcolor"] = 1,
 				-- ["$decalsecondpass"] = 1,
@@ -115,7 +115,7 @@ if CLIENT then
 		if qt.HitTexture ==  "**studio**" then
 			dir = (qt.HitNormal-qt.Normal*0.1):GetNormalized()
 		end
-		util.DecalEx(decalt[uid][1], qt.Entity, qt.HitPos, dir, color, 2, 2)
+		util.DecalEx(decalt[uid][1], qt.Entity, qt.HitPos, dir, color_white, 2, 2)
 	end
 	net.Receive("sssprays", CreateSSSpray)
 	hook.Add("PopulateToolMenu", "SSSprays", function()
@@ -134,7 +134,7 @@ if CLIENT then
 			colsel:AddChoice("Player Color", 2)
 			local colorbox = vgui.Create("DColorCombo")
 			cl:AddItem(colorbox)
-			colorbox:SetColor(scolorr:GetInt(),scolorg:GetInt(),scolorb:GetInt())
+			colorbox:SetColor(Color(scolorr:GetInt(),scolorg:GetInt(),scolorb:GetInt()))
 			function colorbox:OnValueChanged(col)
 				scolorcustom:SetString(col["r"].." "..col["g"].." "..col["b"])
 				scolorr:SetInt(col["r"])

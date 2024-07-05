@@ -105,8 +105,8 @@ if CLIENT then
 					}
 				}
 			})
-			spraymdl:SetFloat("$decalscale", 32 / spraymdl:Width())
-			spray:SetFloat("$decalscale", 32 / spray:Width())
+			spraymdl:SetFloat("$decalscale", 64 / spraymdl:Width())
+			spray:SetFloat("$decalscale", 64 / spray:Width())
 			decalt[uid] = {spray, spraymdl}
 		end
 		local qt = util.QuickTrace(pos, ang:Forward() * sdist:GetInt(), ply)
@@ -115,7 +115,7 @@ if CLIENT then
 		if qt.HitTexture ==  "**studio**" then
 			dir = (qt.HitNormal-qt.Normal*0.1):GetNormalized()
 		end
-		util.DecalEx(decalt[uid][1], qt.Entity, qt.HitPos, dir, color_white, 2, 2)
+		util.DecalEx(decalt[uid][1], qt.Entity, qt.HitPos, dir, color_white, 1, 1)
 	end
 	net.Receive("sssprays", CreateSSSpray)
 	hook.Add("PopulateToolMenu", "SSSprays", function()

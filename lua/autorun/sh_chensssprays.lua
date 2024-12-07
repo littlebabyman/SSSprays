@@ -65,18 +65,14 @@ if CLIENT then
 			end
 			local spraymdl = CreateMaterial("ssspray/"..temp.."mdl", "VertexLitGeneric", {
 				["$basetexture"] = cfile,
-				["$model"] = 1,
 				["$decal"] = 1,
 				["$decalscale"] = 1,
-				-- ["$alphatest"] = 1,
-				-- ["$alphatestreference"] = 1,
-				-- ["$allowalphatocoverage"] = 1,
-				-- ["$vertexcolor"] = 1,
+				["$vertexcolor"] = 1,
 				["$translucent"] = 1,
-				-- ["$vertexalpha"] = 1,
+				["$vertexalpha"] = 1,
+				["$color"] = "[1 1 1]",
 				["$color2"] = "["..tostring(ucol).."]",
-				-- ["$blendtintcoloroverbase"] = 1,
-				-- ["$decalsecondpass"] = 1,
+				["$blendtintcoloroverbase"] = 1,
 				["Proxies"] = {
 					["AnimatedOffsetTexture"] = {
 						["animatedtexturevar"] = "$basetexture",
@@ -90,13 +86,10 @@ if CLIENT then
 				["$decal"] = 1,
 				["$decalscale"] = 1,
 				["$modelmaterial"] = "!ssspray/"..temp.."mdl",
-				-- ["$alphatest"] = 1,
-				-- ["$alphatestreference"] = 1,
-				-- ["$allowalphatocoverage"] = 1,
 				["$color"] = "["..tostring(ucol).."]",
 				["$vertexalpha"] = 1,
 				["$vertexcolor"] = 1,
-				-- ["$decalsecondpass"] = 1,
+				["$translucent"] = 1,
 				["Proxies"] = {
 					["AnimatedOffsetTexture"] = {
 						["animatedtexturevar"] = "$basetexture",
@@ -113,6 +106,7 @@ if CLIENT then
 		if !qt.Hit then return end
 		local color = qt.HitTexture !=  "**studio**" and uinfo != 0 and ucol:ToColor() or color_white
 		if qt.HitTexture ==  "**studio**" then
+			-- decalt[uid][2]:SetString("$color2", "["..tostring(ucol).."]")
 			dir = (qt.HitNormal-qt.Normal*0.1):GetNormalized()
 		end
 		util.DecalEx(decalt[uid][1], qt.Entity, qt.HitPos, dir, color_white, 1, 1)

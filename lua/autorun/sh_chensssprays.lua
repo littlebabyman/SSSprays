@@ -32,10 +32,19 @@ end
 if CLIENT then
 	local scolor = CreateConVar("ssspray_color", 0, FCVAR_ARCHIVE+FCVAR_USERINFO, "Use your player colors for sprays.", -1, 2)
 	local scolorcustom = CreateConVar("ssspray_color_custom", "255 255 255", FCVAR_ARCHIVE+FCVAR_USERINFO, "Custom spray color values. Moreso for reference if anything.")
-	local scolorr = CreateConVar("ssspray_color_r", 255, FCVAR_ARCHIVE+FCVAR_USERINFO, "Custom spray color red value.")
-	local scolorg = CreateConVar("ssspray_color_g", 255, FCVAR_ARCHIVE+FCVAR_USERINFO, "Custom spray color green value.")
-	local scolorb = CreateConVar("ssspray_color_b", 255, FCVAR_ARCHIVE+FCVAR_USERINFO, "Custom spray color blue value.")
+	local scolorr = CreateConVar("ssspray_color_r", 255, FCVAR_ARCHIVE+FCVAR_USERINFO, "Custom spray color red value.", 0, 255)
+	local scolorg = CreateConVar("ssspray_color_g", 255, FCVAR_ARCHIVE+FCVAR_USERINFO, "Custom spray color green value.", 0, 255)
+	local scolorb = CreateConVar("ssspray_color_b", 255, FCVAR_ARCHIVE+FCVAR_USERINFO, "Custom spray color blue value.", 0, 255)
+	local animfix = CreateConVar("ssspray_animatedsprayfix", 1, FCVAR_ARCHIVE+FCVAR_USERINFO, "Show warning for animated sprays not working.", 0, 1)
+	local matsys = GetConVar("mat_queue_mode")
 	local decalt = {}
+	local function iWishIDidntNeedTo()
+		if !animfix:GetBool() then return end
+		if matsys:GetInt() > 1 or matsys:GetInt() < 0 then
+			print([[Animated sprays may not work on models. Set "mat_queue_mode" to 0 or 1 to fix this.]])
+			notification.AddLegacy([[Animated sprays may not work on models. Set "mat_queue_mode" to 0 or 1 to fix this.]], NOTIFY_ERROR, 5)
+		end
+	end
 	file.CreateDir("sssprays")
 	local function CreateSSSpray()
 		ply = net.ReadEntity()
@@ -48,7 +57,9 @@ if CLIENT then
 		local dir = ang:Right()
 		local uinfo = ply:GetInfoNum("ssspray_color", 0)
 		local ucol = uinfo != 0 and (uinfo == 2 and ply:GetPlayerColor() or uinfo == 1 and ply:GetWeaponColor() or Vector(ply:GetInfoNum("ssspray_color_r", 255) / 255,ply:GetInfoNum("ssspray_color_g", 255) / 255,ply:GetInfoNum("ssspray_color_b", 255) / 255)) or Vector(1,1,1)
+		local col = tostring(ucol)
 		if !decalt[uid] then
+			if ply == LocalPlayer() then iWishIDidntNeedTo() end
 			local temp = ply:GetPlayerInfo().customfiles[1]
 			local cfile = "user_custom/" .. string.Left(temp, 2) .. "/" .. temp .. ".dat"
 			if game.SinglePlayer() then
@@ -59,52 +70,41 @@ if CLIENT then
 				local tex = file.Read(cfile, "DOWNLOAD")
 				if !tex or tex:len() <= 0 then return end
 				if !file.Exists("sssprays/"..temp..".vtf", "DATA") or file.Read("sssprays/"..temp..".vtf", "DATA"):len() <= 0 then
-				file.Write("sssprays/"..temp..".vtf", tex)
+					file.Write("sssprays/"..temp..".vtf", tex)
 				end
+				-- if !file.Exists("sssprays/"..temp.."_mdl.vtf", "DATA") or file.Read("sssprays/"..temp.."_mdl.vtf", "DATA"):len() <= 0 then
+				-- 	file.Write("sssprays/"..temp.."_mdl.vtf", tex)
+				-- end my fucking LIFE it was the material queue system working against me
 				cfile = "../../data/sssprays/"..temp
 			end
-			local spraymdl = CreateMaterial("ssspray/"..temp.."mdl", "VertexLitGeneric", {
+			local spraytable = {
 				["$basetexture"] = cfile,
 				["$decal"] = 1,
 				["$decalscale"] = 1,
-				["$vertexcolor"] = 1,
-				["$translucent"] = 1,
-				["$vertexalpha"] = 1,
-				["$color"] = "[1 1 1]",
-				["$color2"] = "["..tostring(ucol).."]",
-				["$blendtintcoloroverbase"] = 1,
+				["$color"] = "["..col.."]",
+				["$alphatest"] = 1,
+				["$alphatestreference"] = 1,
+				["$allowalphatocoverage"] = 1,
 				["Proxies"] = {
-					["AnimatedOffsetTexture"] = {
-						["animatedtexturevar"] = "$basetexture",
-						["animatedtextureframenumvar"] = "$frame",
-						["animatedtextureframerate"] = 5,
-					}
-				}
-			})
-			local spray = CreateMaterial("ssspray/"..temp, "LightmappedGeneric", {
-				["$basetexture"] = cfile,
-				["$decal"] = 1,
-				["$decalscale"] = 1,
-				["$modelmaterial"] = "!ssspray/"..temp.."mdl",
-				["$color"] = "["..tostring(ucol).."]",
-				["$vertexalpha"] = 1,
-				["$vertexcolor"] = 1,
-				["$translucent"] = 1,
-				["Proxies"] = {
-					["AnimatedOffsetTexture"] = {
-						["animatedtexturevar"] = "$basetexture",
-						["animatedtextureframenumvar"] = "$frame",
-						["animatedtextureframerate"] = 5,
-					}
-				}
-			})
-			spraymdl:SetFloat("$decalscale", 64 / spraymdl:Width())
-			spray:SetFloat("$decalscale", 64 / spray:Width())
+					["AnimatedTexture"] = {
+						animatedtexturevar = "$basetexture",
+						animatedtextureframenumvar = "$frame",
+						animatedtextureframerate = 5,
+					},
+				},
+				["$modelmaterial"] = "!ssspray/"..temp.."mdl"
+			}
+			local spraymdl = CreateMaterial("ssspray/"..temp.."mdl", "VertexLitGeneric", spraytable)
+			spraymdl:GetTexture("$basetexture"):Download()
+			local spray = CreateMaterial("ssspray/"..temp, "LightmappedGeneric", spraytable)
+			local size = 64 / spraymdl:Width()
+			spraymdl:SetFloat("$decalscale", size)
+			spray:SetFloat("$decalscale", size)
 			decalt[uid] = {spray, spraymdl}
 		end
 		local qt = util.QuickTrace(pos, ang:Forward() * sdist:GetInt(), ply)
 		if !qt.Hit then return end
-		local color = qt.HitTexture !=  "**studio**" and uinfo != 0 and ucol:ToColor() or color_white
+		-- local color = qt.HitTexture !=  "**studio**" and uinfo != 0 and ucol:ToColor() or color_white
 		if qt.HitTexture ==  "**studio**" then
 			-- decalt[uid][2]:SetString("$color2", "["..tostring(ucol).."]")
 			dir = (qt.HitNormal-qt.Normal*0.1):GetNormalized()
@@ -135,7 +135,9 @@ if CLIENT then
 				scolorg:SetInt(col["g"])
 				scolorb:SetInt(col["b"])
 			end
-			cl:Help("The color for prop sprays will be locked in until a map change.\nTechnical limitation that I haven't figured a workaround for, yet.")
+			cl:Help("The color for sprays will be locked in until a map change.\nTechnical limitation that I haven't figured a workaround for, yet.")
+			cl:CheckBox("Animated spray warning", "ssspray_animatedsprayfix")
+			cl:Help("Show warning for animated sprays possibly not working.\nSetting mat_queue_mode to 0 or 1 will fix them, but requires reapplying every time a map is loaded.")
 			sv:NumSlider("Max spray distance", "ssspray_range", 32, 1024)
 			sv:NumberWang("Spray delay", "decalfrequency", 0, 600)
 		end)

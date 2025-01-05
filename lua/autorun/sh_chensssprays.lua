@@ -42,7 +42,7 @@ if CLIENT then
 		if !animfix:GetBool() then return end
 		if matsys:GetInt() > 1 or matsys:GetInt() < 0 then
 			print([[Animated sprays may not work on models. Set "mat_queue_mode" to 0 or 1 to fix this.]])
-			notification.AddLegacy([[Animated sprays may not work on models. Set "mat_queue_mode" to 0 or 1 to fix this.]], NOTIFY_ERROR, 5)
+			notification.AddLegacy([[Animated sprays may not work on models. Set "mat_queue_mode" to 0 or 1 to fix this. May impact performance.]], NOTIFY_ERROR, 5)
 		end
 	end
 	file.CreateDir("sssprays")
@@ -137,7 +137,7 @@ if CLIENT then
 			end
 			cl:Help("The color for sprays will be locked in until a map change.\nTechnical limitation that I haven't figured a workaround for, yet.")
 			cl:CheckBox("Animated spray warning", "ssspray_animatedsprayfix")
-			cl:Help("Show warning for animated sprays possibly not working.\nSetting mat_queue_mode to 0 or 1 will fix them, but requires reapplying every time a map is loaded.")
+			cl:Help("Show warning for animated sprays possibly not working.\nSetting mat_queue_mode to 0 or 1 will fix them, but requires reapplying every time a map is loaded and may impact performance.")
 			sv:NumSlider("Max spray distance", "ssspray_range", 32, 1024)
 			sv:NumberWang("Spray delay", "decalfrequency", 0, 600)
 		end)

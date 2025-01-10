@@ -35,16 +35,27 @@ if CLIENT then
 	local scolorr = CreateConVar("ssspray_color_r", 255, FCVAR_ARCHIVE+FCVAR_USERINFO, "Custom spray color red value.", 0, 255)
 	local scolorg = CreateConVar("ssspray_color_g", 255, FCVAR_ARCHIVE+FCVAR_USERINFO, "Custom spray color green value.", 0, 255)
 	local scolorb = CreateConVar("ssspray_color_b", 255, FCVAR_ARCHIVE+FCVAR_USERINFO, "Custom spray color blue value.", 0, 255)
-	local animfix = CreateConVar("ssspray_animatedsprayfix", 1, FCVAR_ARCHIVE+FCVAR_USERINFO, "Show warning for animated sprays not working.", 0, 1)
+	local animfixnotify = CreateConVar("ssspray_fixnotification", 1, FCVAR_ARCHIVE+FCVAR_USERINFO, "Show warning for animated sprays not working.", 0, 1)
+	local animfix = CreateConVar("ssspray_fixanimations", 1, FCVAR_ARCHIVE+FCVAR_USERINFO, "Automatically apply animated spray fix on multicore.", 0, 1)
 	local matsys = GetConVar("mat_queue_mode")
 	local decalt = {}
 	local function iWishIDidntNeedTo()
-		if !animfix:GetBool() then return end
-		if matsys:GetInt() > 1 or matsys:GetInt() < 0 then
-			print([[Animated sprays may not work on models. Set "mat_queue_mode" to 0 or 1 to fix this.]])
-			notification.AddLegacy([[Animated sprays may not work on models. Set "mat_queue_mode" to 0 or 1 to fix this. May impact performance.]], NOTIFY_ERROR, 5)
+		if matsys:GetInt() != 1 then
+			if animfix:GetBool() then
+				RunConsoleCommand("mat_queue_mode", "1")
+			end
+			if animfixnotify:GetBool() then
+				local text = (animfix:GetBool() and [["mat_queue_mode" has been set to 1 to fix sprays not animating on models.]] or [[Animated sprays may not work on models. Set "mat_queue_mode" to 1 to fix this.]]) .. [[ May affect performance.]]
+				print("Super Spammable Sprays: "..text)
+				notification.AddLegacy(text, NOTIFY_ERROR, 5)
+			end
 		end
 	end
+
+	hook.Add("InitPostEntity", "SSSprays", function()
+		timer.Simple(2, iWishIDidntNeedTo)
+	end)
+
 	file.CreateDir("sssprays")
 	local function CreateSSSpray()
 		ply = net.ReadEntity()
@@ -59,23 +70,27 @@ if CLIENT then
 		local ucol = uinfo != 0 and (uinfo == 2 and ply:GetPlayerColor() or uinfo == 1 and ply:GetWeaponColor() or Vector(ply:GetInfoNum("ssspray_color_r", 255) / 255,ply:GetInfoNum("ssspray_color_g", 255) / 255,ply:GetInfoNum("ssspray_color_b", 255) / 255)) or Vector(1,1,1)
 		local col = tostring(ucol)
 		if !decalt[uid] then
-			if ply == LocalPlayer() then iWishIDidntNeedTo() end
+			-- if ply == LocalPlayer() then iWishIDidntNeedTo() end
 			local temp = ply:GetPlayerInfo().customfiles[1]
 			local cfile = "user_custom/" .. string.Left(temp, 2) .. "/" .. temp .. ".dat"
+			print(cfile)
 			if game.SinglePlayer() then
 				temp = string.Replace(GetConVar("cl_logofile"):GetString(), "materials/", "")
 				cfile = string.Replace(temp, ".vtf", "")
 				temp = cfile
 			else
 				local tex = file.Read(cfile, "DOWNLOAD")
-				if !tex or tex:len() <= 0 then return end
-				if !file.Exists("sssprays/"..temp..".vtf", "DATA") or file.Read("sssprays/"..temp..".vtf", "DATA"):len() <= 0 then
-					file.Write("sssprays/"..temp..".vtf", tex)
+				if !tex or tex:len() <= 0 then
+					cfile = "null"
+				else
+					if !file.Exists("sssprays/"..temp..".vtf", "DATA") or file.Read("sssprays/"..temp..".vtf", "DATA"):len() <= 0 then
+						file.Write("sssprays/"..temp..".vtf", tex)
+					end
+					-- if !file.Exists("sssprays/"..temp.."_mdl.vtf", "DATA") or file.Read("sssprays/"..temp.."_mdl.vtf", "DATA"):len() <= 0 then
+					-- 	file.Write("sssprays/"..temp.."_mdl.vtf", tex)
+					-- end my fucking LIFE it was the material queue system working against me
+					cfile = "../../data/sssprays/"..temp
 				end
-				-- if !file.Exists("sssprays/"..temp.."_mdl.vtf", "DATA") or file.Read("sssprays/"..temp.."_mdl.vtf", "DATA"):len() <= 0 then
-				-- 	file.Write("sssprays/"..temp.."_mdl.vtf", tex)
-				-- end my fucking LIFE it was the material queue system working against me
-				cfile = "../../data/sssprays/"..temp
 			end
 			local spraytable = {
 				["$basetexture"] = cfile,
@@ -136,8 +151,9 @@ if CLIENT then
 				scolorb:SetInt(col["b"])
 			end
 			cl:Help("The color for sprays will be locked in until a map change.\nTechnical limitation that I haven't figured a workaround for, yet.")
-			cl:CheckBox("Animated spray warning", "ssspray_animatedsprayfix")
-			cl:Help("Show warning for animated sprays possibly not working.\nSetting mat_queue_mode to 0 or 1 will fix them, but requires reapplying every time a map is loaded and may impact performance.")
+			cl:CheckBox("Animated spray fix", "ssspray_fixanimations")
+			cl:ControlHelp([[Automatically sets "mat_queue_mode" to 1 if needed. May impact performance.]])
+			cl:CheckBox("Show fix notification", "ssspray_fixnotification")
 			sv:NumSlider("Max spray distance", "ssspray_range", 32, 1024)
 			sv:NumberWang("Spray delay", "decalfrequency", 0, 600)
 		end)

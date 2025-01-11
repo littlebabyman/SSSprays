@@ -25,6 +25,7 @@ if SERVER then
 			ply:AddEFlags(EFL_FORCE_CHECK_TRANSMIT)
 			tr.Entity:AddEFlags(EFL_FORCE_CHECK_TRANSMIT)
 			if !ply.SSSprayColors then
+				local uinfo = ply:GetInfoNum("ssspray_color", 0)
 				ply.SSSprayColors = uinfo != 0 and (uinfo == 2 and ply:GetPlayerColor() or uinfo == 1 and ply:GetWeaponColor() or Vector(ply:GetInfoNum("ssspray_color_r", 255) / 255,ply:GetInfoNum("ssspray_color_g", 255) / 255,ply:GetInfoNum("ssspray_color_b", 255) / 255)) or Vector(1,1,1)
 			end
 			sound.Play("SprayCan.Paint", trab.start + ang:Forward() * 16)
@@ -75,7 +76,6 @@ if CLIENT then
 		local pos = ply:EyePos()
 		local ang = norm:Angle()
 		local dir = ang:Right()
-		local uinfo = ply:GetInfoNum("ssspray_color", 0)
 		local qt = util.QuickTrace(pos, ang:Forward() * sdist:GetInt(), ply)
 		local col = tostring(ucol)
 		if !decalt[uid] or !IsValid(decalt[uid][1]) then

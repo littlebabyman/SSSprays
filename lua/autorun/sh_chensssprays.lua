@@ -70,7 +70,7 @@ if CLIENT then
 		local ucol = uinfo != 0 and (uinfo == 2 and ply:GetPlayerColor() or uinfo == 1 and ply:GetWeaponColor() or Vector(ply:GetInfoNum("ssspray_color_r", 255) / 255,ply:GetInfoNum("ssspray_color_g", 255) / 255,ply:GetInfoNum("ssspray_color_b", 255) / 255)) or Vector(1,1,1)
 		local qt = util.QuickTrace(pos, ang:Forward() * sdist:GetInt(), ply)
 		local col = tostring(ucol)
-		if !decalt[uid] then
+		if !decalt[uid] or !IsValid(decalt[uid][1]) then
 			-- if ply == LocalPlayer() then iWishIDidntNeedTo() end
 			
 			local temp = ply:GetPlayerInfo().customfiles[1]
@@ -93,7 +93,6 @@ if CLIENT then
 				["$decal"] = 1,
 				["$decalscale"] = 1,
 				["$nocull"] = 1,
-				-- ["$decalsecondpass"] = 1,
 				["$color"] = "[1 1 1]",
 				["$color2"] = "["..col.."]",
 				["$alphatest"] = 1,

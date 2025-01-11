@@ -25,14 +25,14 @@ if SERVER then
 			ply:AddEFlags(EFL_FORCE_CHECK_TRANSMIT)
 			tr.Entity:AddEFlags(EFL_FORCE_CHECK_TRANSMIT)
 			if !ply.SSSprayColors then
-				local uinfo = ply:GetInfoNum("ssspray_color", 0)
-				ply.SSSprayColors = uinfo != 0 and (uinfo == 2 and ply:GetPlayerColor() or uinfo == 1 and ply:GetWeaponColor() or Vector(ply:GetInfoNum("ssspray_color_r", 255) / 255,ply:GetInfoNum("ssspray_color_g", 255) / 255,ply:GetInfoNum("ssspray_color_b", 255) / 255)) or Vector(1,1,1)
+				local uinfo, r, g, b = ply:GetInfoNum("ssspray_color", 0), ply:GetInfoNum("ssspray_color_r", 255), ply:GetInfoNum("ssspray_color_g", 255), ply:GetInfoNum("ssspray_color_b", 255)
+				ply.SSSprayColors = uinfo != 0 and (uinfo == 2 and ply:GetPlayerColor() or uinfo == 1 and ply:GetWeaponColor() or Vector(r, g, b)/255) or Vector(1,1,1)
 			end
 			sound.Play("SprayCan.Paint", trab.start + ang:Forward() * 16)
 			net.Start("sssprays", true)
 			net.WriteEntity(ply)
 			net.WriteNormal(ply:GetAimVector())
-			net.WriteNormal(ply.SSSprayColors)
+			net.WriteVector(ply.SSSprayColors)
 			net.Broadcast()
 		end
 	end)
@@ -69,7 +69,7 @@ if CLIENT then
 	local function CreateSSSpray()
 		local ply = net.ReadEntity()
 		local norm = net.ReadNormal()
-		local ucol = net.ReadNormal()
+		local ucol = net.ReadVector()
 		-- local ent = net.ReadEntity()
 		if !IsValid(ply) then return end
 		local uid = ply:UserID()

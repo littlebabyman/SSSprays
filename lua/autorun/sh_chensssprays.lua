@@ -3,29 +3,37 @@ local sdist = CreateConVar("ssspray_range", 128, FCVAR_ARCHIVE+FCVAR_REPLICATED,
 local delay = GetConVar("decalfrequency")
 if SERVER then
 	util.AddNetworkString("sssprays")
+	-- gameevent.Listen("player_activate")
+	-- hook.Add("player_activate", "SSSprays", function(data)
+	-- 	Player(data.userid).SSSprayColors = false
+	-- end)
 	hook.Add("PlayerSpray", "SSSprays", function(ply)
-		if game.SinglePlayer() or !ply:KeyDown(IN_WALK) then return true end
+		return !ply:KeyDown(IN_WALK)
 	end)
 	hook.Add("FinishMove", "SSSprays", function(ply, mv)
 		if ply:GetInternalVariable("m_flNextDecalTime") > 0 then return end
 		if mv:GetImpulseCommand() != 201 then return end
+		if ply:KeyDown(IN_WALK) then return end
 		local trab = {}
 		local pos, ang = ply:EyePos(), ply:EyeAngles()
 		trab.start = pos
 		trab.endpos = trab.start + ang:Forward() * sdist:GetInt()
 		trab.filter = ply
 		local tr = util.TraceLine(trab)
-		if !tr.Hit then return end
-		if ply:KeyDown(IN_WALK) then ply:SprayDecal(pos, trab.endpos) return end
-		sound.Play("SprayCan.Paint", trab.start + ang:Forward() * 16)
-		ply:SetSaveValue("m_flNextDecalTime", delay:GetFloat())
-		ply:AddEFlags(EFL_FORCE_CHECK_TRANSMIT)
-		tr.Entity:AddEFlags(EFL_FORCE_CHECK_TRANSMIT)
-		net.Start("sssprays", true)
-		net.WriteEntity(ply)
-		net.WriteNormal(ply:GetAimVector())
-		net.WriteEntity(tr.Entity)
-		net.Broadcast()
+		if tr.Hit then
+			ply:SetSaveValue("m_flNextDecalTime", delay:GetFloat())
+			ply:AddEFlags(EFL_FORCE_CHECK_TRANSMIT)
+			tr.Entity:AddEFlags(EFL_FORCE_CHECK_TRANSMIT)
+			if !ply.SSSprayColors then
+				ply.SSSprayColors = uinfo != 0 and (uinfo == 2 and ply:GetPlayerColor() or uinfo == 1 and ply:GetWeaponColor() or Vector(ply:GetInfoNum("ssspray_color_r", 255) / 255,ply:GetInfoNum("ssspray_color_g", 255) / 255,ply:GetInfoNum("ssspray_color_b", 255) / 255)) or Vector(1,1,1)
+			end
+			sound.Play("SprayCan.Paint", trab.start + ang:Forward() * 16)
+			net.Start("sssprays", true)
+			net.WriteEntity(ply)
+			net.WriteNormal(ply:GetAimVector())
+			net.WriteNormal(ply.SSSprayColors)
+			net.Broadcast()
+		end
 	end)
 end
 
@@ -58,16 +66,16 @@ if CLIENT then
 
 	file.CreateDir("sssprays")
 	local function CreateSSSpray()
-		ply = net.ReadEntity()
+		local ply = net.ReadEntity()
 		local norm = net.ReadNormal()
-		local ent = net.ReadEntity()
+		local ucol = net.ReadNormal()
+		-- local ent = net.ReadEntity()
 		if !IsValid(ply) then return end
 		local uid = ply:UserID()
 		local pos = ply:EyePos()
 		local ang = norm:Angle()
 		local dir = ang:Right()
 		local uinfo = ply:GetInfoNum("ssspray_color", 0)
-		local ucol = uinfo != 0 and (uinfo == 2 and ply:GetPlayerColor() or uinfo == 1 and ply:GetWeaponColor() or Vector(ply:GetInfoNum("ssspray_color_r", 255) / 255,ply:GetInfoNum("ssspray_color_g", 255) / 255,ply:GetInfoNum("ssspray_color_b", 255) / 255)) or Vector(1,1,1)
 		local qt = util.QuickTrace(pos, ang:Forward() * sdist:GetInt(), ply)
 		local col = tostring(ucol)
 		if !decalt[uid] or !IsValid(decalt[uid][1]) then
@@ -107,21 +115,17 @@ if CLIENT then
 				},
 				["$modelmaterial"] = "!ssspray/"..temp.."mdl"
 			}
-			local spraymdl = CreateMaterial("ssspray/"..temp.."mdl", "VertexLitGeneric", spraytable)
-			spraymdl:GetTexture("$basetexture"):Download()
-			local spray = CreateMaterial("ssspray/"..temp, "LightmappedGeneric", spraytable)
-			-- local size = 64 / spraymdl:Width()
-			spraymdl:SetFloat("$decalscale", 64 / spraymdl:Width())
-			spray:SetFloat("$decalscale", 64 / spray:Width())
-			decalt[uid] = {spray, spraymdl}
+			local spraymdl, spray = CreateMaterial("ssspray/"..temp.."mdl", "VertexLitGeneric", spraytable), CreateMaterial("ssspray/"..temp, "LightmappedGeneric", spraytable)
+			local texture = spraymdl:GetTexture("$basetexture")
+			texture:Download()
+			local size = 64 / texture:GetMappingWidth()
+			decalt[uid] = {spray = spray, spraymdl = spraymdl, size = size}
 		end
 		if !qt.Hit then return end
-		-- local color = qt.HitTexture !=  "**studio**" and uinfo != 0 and ucol:ToColor() or color_white
 		if qt.HitTexture ==  "**studio**" then
-			-- decalt[uid][2]:SetString("$color2", "["..tostring(ucol).."]")
 			dir = (qt.HitNormal-qt.Normal*0.1):GetNormalized()
 		end
-		util.DecalEx(decalt[uid][1], qt.Entity, qt.HitPos, dir, col, 1, 1)
+		util.DecalEx(decalt[uid].spray, qt.Entity, qt.HitPos, dir, color_white, decalt[uid].size, decalt[uid].size)
 	end
 	net.Receive("sssprays", CreateSSSpray)
 	hook.Add("PopulateToolMenu", "SSSprays", function()

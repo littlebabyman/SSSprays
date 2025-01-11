@@ -53,7 +53,7 @@ if CLIENT then
 	end
 
 	hook.Add("InitPostEntity", "SSSprays", function()
-		timer.Simple(2, iWishIDidntNeedTo)
+		timer.Simple(5, iWishIDidntNeedTo)
 	end)
 
 	file.CreateDir("sssprays")
@@ -68,35 +68,34 @@ if CLIENT then
 		local dir = ang:Right()
 		local uinfo = ply:GetInfoNum("ssspray_color", 0)
 		local ucol = uinfo != 0 and (uinfo == 2 and ply:GetPlayerColor() or uinfo == 1 and ply:GetWeaponColor() or Vector(ply:GetInfoNum("ssspray_color_r", 255) / 255,ply:GetInfoNum("ssspray_color_g", 255) / 255,ply:GetInfoNum("ssspray_color_b", 255) / 255)) or Vector(1,1,1)
+		local qt = util.QuickTrace(pos, ang:Forward() * sdist:GetInt(), ply)
 		local col = tostring(ucol)
 		if !decalt[uid] then
 			-- if ply == LocalPlayer() then iWishIDidntNeedTo() end
+			
 			local temp = ply:GetPlayerInfo().customfiles[1]
 			local cfile = "user_custom/" .. string.Left(temp, 2) .. "/" .. temp .. ".dat"
-			print(cfile)
 			if game.SinglePlayer() then
 				temp = string.Replace(GetConVar("cl_logofile"):GetString(), "materials/", "")
 				cfile = string.Replace(temp, ".vtf", "")
 				temp = cfile
 			else
 				local tex = file.Read(cfile, "DOWNLOAD")
+				cfile = "../../data/sssprays/"..temp
 				if !tex or tex:len() <= 0 then
 					cfile = "null"
-				else
-					if !file.Exists("sssprays/"..temp..".vtf", "DATA") or file.Read("sssprays/"..temp..".vtf", "DATA"):len() <= 0 then
-						file.Write("sssprays/"..temp..".vtf", tex)
-					end
-					-- if !file.Exists("sssprays/"..temp.."_mdl.vtf", "DATA") or file.Read("sssprays/"..temp.."_mdl.vtf", "DATA"):len() <= 0 then
-					-- 	file.Write("sssprays/"..temp.."_mdl.vtf", tex)
-					-- end my fucking LIFE it was the material queue system working against me
-					cfile = "../../data/sssprays/"..temp
+				elseif !file.Exists("sssprays/"..temp..".vtf", "DATA") or file.Read("sssprays/"..temp..".vtf", "DATA"):len() <= 0 then
+					file.Write("sssprays/"..temp..".vtf", tex)
 				end
 			end
 			local spraytable = {
 				["$basetexture"] = cfile,
 				["$decal"] = 1,
 				["$decalscale"] = 1,
-				["$color"] = "["..col.."]",
+				["$nocull"] = 1,
+				-- ["$decalsecondpass"] = 1,
+				["$color"] = "[1 1 1]",
+				["$color2"] = "["..col.."]",
 				["$alphatest"] = 1,
 				["$alphatestreference"] = 1,
 				["$allowalphatocoverage"] = 1,
@@ -112,19 +111,18 @@ if CLIENT then
 			local spraymdl = CreateMaterial("ssspray/"..temp.."mdl", "VertexLitGeneric", spraytable)
 			spraymdl:GetTexture("$basetexture"):Download()
 			local spray = CreateMaterial("ssspray/"..temp, "LightmappedGeneric", spraytable)
-			local size = 64 / spraymdl:Width()
-			spraymdl:SetFloat("$decalscale", size)
-			spray:SetFloat("$decalscale", size)
+			-- local size = 64 / spraymdl:Width()
+			spraymdl:SetFloat("$decalscale", 64 / spraymdl:Width())
+			spray:SetFloat("$decalscale", 64 / spray:Width())
 			decalt[uid] = {spray, spraymdl}
 		end
-		local qt = util.QuickTrace(pos, ang:Forward() * sdist:GetInt(), ply)
 		if !qt.Hit then return end
 		-- local color = qt.HitTexture !=  "**studio**" and uinfo != 0 and ucol:ToColor() or color_white
 		if qt.HitTexture ==  "**studio**" then
 			-- decalt[uid][2]:SetString("$color2", "["..tostring(ucol).."]")
 			dir = (qt.HitNormal-qt.Normal*0.1):GetNormalized()
 		end
-		util.DecalEx(decalt[uid][1], qt.Entity, qt.HitPos, dir, color_white, 1, 1)
+		util.DecalEx(decalt[uid][1], qt.Entity, qt.HitPos, dir, col, 1, 1)
 	end
 	net.Receive("sssprays", CreateSSSpray)
 	hook.Add("PopulateToolMenu", "SSSprays", function()

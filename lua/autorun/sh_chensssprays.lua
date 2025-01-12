@@ -22,12 +22,12 @@ if SERVER then
 		local tr = util.TraceLine(trab)
 		if tr.Hit then
 			ply:SetSaveValue("m_flNextDecalTime", delay:GetFloat())
+			if !ply.SSSprayColors then
+				local uinfo, r, g, b = ply:GetInfoNum("ssspray_color", 0), ply:GetInfoNum("ssspray_color_r", 255)/255, ply:GetInfoNum("ssspray_color_g", 255)/255, ply:GetInfoNum("ssspray_color_b", 255)/255
+				ply.SSSprayColors = uinfo != 0 and (uinfo == 2 and ply:GetPlayerColor() or uinfo == 1 and ply:GetWeaponColor() or Vector(r, g, b)) or Vector(1,1,1)
+			end
 			ply:AddEFlags(EFL_FORCE_CHECK_TRANSMIT)
 			tr.Entity:AddEFlags(EFL_FORCE_CHECK_TRANSMIT)
-			if !ply.SSSprayColors then
-				local uinfo, r, g, b = ply:GetInfoNum("ssspray_color", 0), ply:GetInfoNum("ssspray_color_r", 255), ply:GetInfoNum("ssspray_color_g", 255), ply:GetInfoNum("ssspray_color_b", 255)
-				ply.SSSprayColors = uinfo != 0 and (uinfo == 2 and ply:GetPlayerColor() or uinfo == 1 and ply:GetWeaponColor() or Vector(r, g, b)/255) or Vector(1,1,1)
-			end
 			sound.Play("SprayCan.Paint", trab.start + ang:Forward() * 16)
 			net.Start("sssprays", true)
 			net.WriteEntity(ply)
@@ -46,15 +46,15 @@ if CLIENT then
 	local scolorb = CreateConVar("ssspray_color_b", 255, FCVAR_ARCHIVE+FCVAR_USERINFO, "Custom spray color blue value.", 0, 255)
 	local animfixnotify = CreateConVar("ssspray_fixnotification", 1, FCVAR_ARCHIVE+FCVAR_USERINFO, "Show warning for animated sprays not working.", 0, 1)
 	local animfix = CreateConVar("ssspray_fixanimations", 1, FCVAR_ARCHIVE+FCVAR_USERINFO, "Automatically apply animated spray fix on multicore.", 0, 1)
-	local matsys = GetConVar("mat_queue_mode")
+	local matsys, mcore = BRANCH == "x86-64" and "1" or "0", GetConVar("gmod_mcore_test") -- i don't believe mat_queue_mode's failing here...
 	local decalt = {}
 	local function iWishIDidntNeedTo()
-		if matsys:GetInt() != 1 then
+		if mcore:GetBool() then
 			if animfix:GetBool() then
-				RunConsoleCommand("mat_queue_mode", "1")
+				RunConsoleCommand("mat_queue_mode", matsys)
 			end
 			if animfixnotify:GetBool() then
-				local text = (animfix:GetBool() and [["mat_queue_mode" has been set to 1 to fix sprays not animating on models.]] or [[Animated sprays may not work on models. Set "mat_queue_mode" to 1 to fix this.]]) .. [[ May affect performance.]]
+				local text = (animfix:GetBool() and [["mat_queue_mode" has been set to ]] .. matsys .. [[ to fix sprays not animating on models.]] or [[Animated sprays may not work on models. Set "mat_queue_mode" to ]] .. matsys .. [[ to fix this.]]) .. [[ May affect performance.]]
 				print("Super Spammable Sprays: "..text)
 				notification.AddLegacy(text, NOTIFY_ERROR, 5)
 			end
@@ -116,16 +116,18 @@ if CLIENT then
 				["$modelmaterial"] = "!ssspray/"..temp.."mdl"
 			}
 			local spraymdl, spray = CreateMaterial("ssspray/"..temp.."mdl", "VertexLitGeneric", spraytable), CreateMaterial("ssspray/"..temp, "LightmappedGeneric", spraytable)
-			local texture = spraymdl:GetTexture("$basetexture")
-			texture:Download()
-			local size = 64 / texture:GetMappingWidth()
-			decalt[uid] = {spray = spray, spraymdl = spraymdl, size = size}
+			-- local texture = spraymdl:GetTexture("$basetexture")
+			-- texture:Download()
+			local size = 32 / spraymdl:Width()
+			spraymdl:SetFloat("$decalscale", size)
+			spray:SetFloat("$decalscale", size)
+			decalt[uid] = {spray = spray, spraymdl = spraymdl}
 		end
 		if !qt.Hit then return end
 		if qt.HitTexture ==  "**studio**" then
 			dir = (qt.HitNormal-qt.Normal*0.1):GetNormalized()
 		end
-		util.DecalEx(decalt[uid].spray, qt.Entity, qt.HitPos, dir, color_white, decalt[uid].size, decalt[uid].size)
+		util.DecalEx(decalt[uid].spray, qt.Entity, qt.HitPos, dir, color_white, 2, 2)
 	end
 	net.Receive("sssprays", CreateSSSpray)
 	hook.Add("PopulateToolMenu", "SSSprays", function()

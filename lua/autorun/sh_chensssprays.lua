@@ -3,10 +3,6 @@ local sdist = CreateConVar("ssspray_range", 128, FCVAR_ARCHIVE+FCVAR_REPLICATED,
 local delay = GetConVar("decalfrequency")
 if SERVER then
 	util.AddNetworkString("sssprays")
-	-- gameevent.Listen("player_activate")
-	-- hook.Add("player_activate", "SSSprays", function(data)
-	-- 	Player(data.userid).SSSprayColors = false
-	-- end)
 	hook.Add("PlayerSpray", "SSSprays", function(ply)
 		return !ply:KeyDown(IN_WALK)
 	end)
@@ -45,18 +41,17 @@ if CLIENT then
 	local scolorg = CreateConVar("ssspray_color_g", 255, FCVAR_ARCHIVE+FCVAR_USERINFO, "Custom spray color green value.", 0, 255)
 	local scolorb = CreateConVar("ssspray_color_b", 255, FCVAR_ARCHIVE+FCVAR_USERINFO, "Custom spray color blue value.", 0, 255)
 	local animfixnotify = CreateConVar("ssspray_fixnotification", 1, FCVAR_ARCHIVE+FCVAR_USERINFO, "Show warning for animated sprays not working.", 0, 1)
-	local animfix = CreateConVar("ssspray_fixanimations", 1, FCVAR_ARCHIVE+FCVAR_USERINFO, "Automatically apply animated spray fix on multicore.", 0, 1)
-	local matsys, mcore = BRANCH == "x86-64" and "1" or "0", GetConVar("gmod_mcore_test") -- i don't believe mat_queue_mode's failing here...
+	local animfix = CreateConVar("ssspray_fixanimations", 0, FCVAR_ARCHIVE+FCVAR_USERINFO, "Automatically apply animated spray fix on multicore.", 0, 1)
+	local matsys, is64, mcore = GetConVar("mat_queue_mode"),  (BRANCH != "x86-64" and "\n" .. [[May affect performance greatly, switching to "x86-64" beta branch of Garry's Mod recommended.]] or [[May affect performance.]]), GetConVar("gmod_mcore_test")
 	local decalt = {}
 	local function iWishIDidntNeedTo()
-		if mcore:GetBool() then
-			if animfix:GetBool() then
-				RunConsoleCommand("mat_queue_mode", matsys)
-			end
+		local noanim = mcore:GetBool() and matsys:GetInt() == -1 or matsys:GetInt() == 2
+		if noanim then
+			if animfix:GetBool() then RunConsoleCommand("mat_queue_mode", "0") end
+			local text = (animfix:GetBool() and [[Console variable "mat_queue_mode" has been set to 0 to fix sprays not animating on models.]] or [[Sprays may not animate on models. Set console variable "mat_queue_mode" to 0 to fix this. ]]) .. is64
+			print("Super Spammable Sprays: "..text)
 			if animfixnotify:GetBool() then
-				local text = (animfix:GetBool() and [["mat_queue_mode" has been set to ]] .. matsys .. [[ to fix sprays not animating on models.]] or [[Animated sprays may not work on models. Set "mat_queue_mode" to ]] .. matsys .. [[ to fix this.]]) .. [[ May affect performance.]]
-				print("Super Spammable Sprays: "..text)
-				notification.AddLegacy(text, NOTIFY_ERROR, 5)
+				notification.AddLegacy(text.."\nYou may change this setting and/or notification in Options > Chen's Addons > SSSprays.", NOTIFY_ERROR, 5)
 			end
 		end
 	end
@@ -133,8 +128,8 @@ if CLIENT then
 	hook.Add("PopulateToolMenu", "SSSprays", function()
 		spawnmenu.AddToolMenuOption("Options", "Chen's Addons", "SSSprays", "SSSprays", "", "", function(pnl)
 			local cl, sv = vgui.Create("DForm"), vgui.Create("DForm")
-			cl:SetName("Client")
-			sv:SetName("Server")
+			cl:SetLabel("Client")
+			sv:SetLabel("Server")
 			local image = vgui.Create("DImage")
 			image:SetImage(string.Replace(GetConVar("cl_logofile"):GetString(), "materials/", ""))
 			image:SetKeepAspect(true)
@@ -142,7 +137,7 @@ if CLIENT then
 			image:SetImageColor(Color(scolorr:GetInt(),scolorg:GetInt(),scolorb:GetInt()))
 			pnl:AddItem(cl)
 			pnl:AddItem(sv)
-			pnl:SetName("Super Spammable Sprays")
+			pnl:SetLabel("Super Spammable Sprays")
 			local colsel = cl:ComboBox("Spray Tint", "ssspray_color")
 			colsel:SetSortItems(false)
 			colsel:AddChoice("Custom", -1)
@@ -165,6 +160,7 @@ if CLIENT then
 			cl:ControlHelp([[Technical limitation that I haven't figured a workaround for, yet.]])
 			cl:CheckBox("Animated spray fix", "ssspray_fixanimations")
 			cl:ControlHelp([[Automatically sets "mat_queue_mode" to 1 if needed. May impact performance.]])
+			cl:Button("Manually fix animated sprays", "mat_queue_mode", "0")
 			cl:CheckBox("Show fix notification", "ssspray_fixnotification")
 			cl:ControlHelp([[Acknowledgment for user consent.]])
 			sv:NumSlider("Max spray distance", "ssspray_range", 32, 1024)

@@ -98,9 +98,10 @@ if CLIENT then
 				["$nocull"] = 1,
 				["$color"] = "[1 1 1]",
 				["$color2"] = "["..col.."]",
-				["$alphatest"] = 1,
-				["$alphatestreference"] = 1,
-				["$allowalphatocoverage"] = 1,
+				["$translucent"] = 1,
+				-- ["$alphatest"] = 1,
+				-- ["$alphatestreference"] = 1,
+				-- ["$allowalphatocoverage"] = 1,
 				["Proxies"] = {
 					["AnimatedTexture"] = {
 						animatedtexturevar = "$basetexture",
